@@ -71,6 +71,6 @@ Here is a list of users who already contributed to this repository: \
 (c) 2025 Daniele Bailo daniele.bailo[at]ingv.it \
 (c) 2025 Valentino Lauciani valentino.lauciani[at]ingv.it \
 (c) 2025 Raffale Di Stefano raffaele.distefano[at]ingv.it \
-(c) 2025 Fabrizio Bernardi fabrizio.bernardi[at]ingv.it \
+(c) 2025 Fabrizio Bernardi fabrizio.bernardi[at]ingv.it 
 
 Istituto Nazionale di Geofisica e Vulcanologia, Italia
