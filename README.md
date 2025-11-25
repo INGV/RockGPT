@@ -34,6 +34,7 @@ This version is containerized with [Ollama](https://ollama.com) as inference eng
 ---
 
 ## 📁 Project Structure
+```
 rockgpt/
 ├── docker-compose.yml
 ├── ollama/
@@ -41,6 +42,7 @@ rockgpt/
 ├── openwebui/
 │  └── data/       # Knowledge base content
 └── README.md       # This file
+```
 ---
 
 ## 📚 Preloaded Knowledge
