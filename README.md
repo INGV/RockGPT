@@ -62,7 +62,7 @@ Thanks to your contributions!
 
 Here is a list of users who already contributed to this repository: \
 <a href="https://github.com/INGV/RockGPT/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ingv/fdsnws-fetcher" />
+  <img src="https://contrib.rocks/image?repo=INGV/RockGPT" />
 </a>
 
 # Author
