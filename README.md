@@ -27,20 +27,6 @@ cd ..
 docker compose up -d
 ```
 
-
-
-```sh
-WUI_NEW="0.6.36-cuda"
-docker run -d -p 8585:8080 \
-    --gpus all \
-    --add-host=host.docker.internal:host-gateway \
-    -v $(pwd)/rockgpt-open-webui:/app/backend/data \
-    --name rockgpt-open-webui \
-    --restart always \
-    --env GLOBAL_LOG_LEVEL="INFO" \
-    ghcr.io/open-webui/open-webui:${WUI_NEW}
-```
-
 ### 1. Access the Interface
 - Open your browser and go to: `http://localhost:8585`  
 
