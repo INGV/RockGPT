@@ -7,13 +7,45 @@ This version is containerized with [Ollama](https://ollama.com) as inference eng
 
 ## 🚀 Quickstart: Add New Knowledge via RAG
 
+### Installation
+#### Clone the repository
+```sh
+git clone https://github.com/INGV/RockGPT.git
+cd RockGPT
+```
+
+#### Get the _dataset_ for OpenWebUI and unzip it
+```sh
+cd openwebui/
+curl -L -O "https://webservices.ingv.it/rockgpt-open-webui.zip"
+unzip rockgpt-open-webui.zip
+cd ..
+```
+
+#### Start the services
+```sh
+docker compose up -d
+```
+
+
+
+```sh
+WUI_NEW="0.6.36-cuda"
+docker run -d -p 8585:8080 \
+    --gpus all \
+    --add-host=host.docker.internal:host-gateway \
+    -v $(pwd)/rockgpt-open-webui:/app/backend/data \
+    --name rockgpt-open-webui \
+    --restart always \
+    --env GLOBAL_LOG_LEVEL="INFO" \
+    ghcr.io/open-webui/open-webui:${WUI_NEW}
+```
+
 ### 1. Access the Interface
 - Open your browser and go to: `http://localhost:8585`  
-  *(Please verify with Valentino: address and credentials may differ)*
 
 ### 2. Login
 - Enter your username and password  
-  *(Check with Valentino: default credentials or login method)*
 
 ### 3. Create a New Knowledge Base
 - On the **left sidebar**, click the **Workspace icon**
