@@ -27,6 +27,17 @@ cd ..
 docker compose up -d
 ```
 
+#### Get Ollama models
+```sh
+docker exec -i ollama ollama pull mistral-7b-instruct
+docker exec -i ollama ollama pull deepseek-r1:32b
+docker exec -i ollama ollama pull gemma2:27b
+docker exec -i ollama ollama pull llama3.3:70b-instruct-q3_K_S
+docker exec -i ollama ollama pull orca2:13b
+docker exec -i ollama ollama pull phi4:latest
+docker exec -i ollama ollama pull qwen2.5:72b-instruct
+```
+
 ### 1. Access the Interface
 - Open your browser and go to: `http://localhost:8585`  
 
