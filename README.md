@@ -8,6 +8,9 @@ This version is containerized with [Ollama](https://ollama.com) as inference eng
 ## 🚀 Quickstart: Add New Knowledge via RAG
 
 ### Installation
+#### Prerequisites
+- [docker](https://www.docker.com/) installed
+
 #### Clone the repository
 ```sh
 git clone https://github.com/INGV/RockGPT.git
@@ -83,10 +86,19 @@ The default deployment includes 28 peer-reviewed, open-access publications on:
 
 ---
 
-## 🤝 License
-
+## License & Credits
 This repository is intended for academic and research purposes.  
-Please verify that any added documents comply with copyright and data policy constraints.
+
+### License
+This project is licensed under the **Apache License 2.0**. See the [LICENSE](LICENSE) file for the full license text.
+
+### Acknowledgments
+RockGPT is built upon and integrates the following open-source projects:
+* **[Open WebUI](https://github.com/open-webui/open-webui)** - Licensed under the BSD 3-Clause "New" or "Revised" License.
+* **[Ollama](https://github.com/ollama/ollama)** - Licensed under the MIT License.
+
+We are grateful to the maintainers and contributors of these projects for their invaluable work.
+
 
 # Contribute
 Thanks to your contributions!
