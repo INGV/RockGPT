@@ -39,7 +39,7 @@ nvidia-smi
 
 Verify Docker GPU support:
 ```sh
-docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+docker run --rm --gpus all nvidia/cuda:13.1.0-base-ubuntu24.04 nvidia-smi
 ```
 
 If this command works, Docker can access the GPU correctly.
