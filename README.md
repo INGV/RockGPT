@@ -32,7 +32,7 @@ docker compose up -d
 
 #### 5. Get Ollama models
 ```sh
-docker compose exec ollama bash -c "ollama pull mistral:7b"
+docker compose exec ollama bash -c "ollama pull mixtral:8x7b"
 docker compose exec ollama bash -c "ollama pull deepseek-r1:32b"
 docker compose exec ollama bash -c "ollama pull gemma2:27b"
 docker compose exec ollama bash -c "ollama pull llama3.3:70b-instruct-q3_K_S"
