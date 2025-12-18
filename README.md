@@ -100,6 +100,8 @@ docker compose exec ollama bash -c "ollama pull qwen2.5:72b-instruct"
 
 ### Access the Interface
 - Open your browser and go to: `http://localhost:8585`  
+  - Email: `admin@test-email.com`
+  - Password: `adminpass`
 
 ### Login
 - Enter your username and password  
