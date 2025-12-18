@@ -69,12 +69,6 @@ cd ..
 
 #### 4. Start the services
 
-##### CPU-only (default)
-
-```sh
-docker compose up -d
-```
-
 ##### With GPU acceleration (recommended)
 
 If your system has a compatible NVIDIA GPU, start the stack with:
@@ -83,6 +77,12 @@ docker compose -f compose.yml -f compose-gpu.yml up -d
 ```
 
 This enables GPU usage only for the Ollama service.
+
+##### With CPU-only
+
+```sh
+docker compose up -d
+```
 
 #### 5. Get Ollama models
 
