@@ -8,16 +8,16 @@ This version is containerized with [Ollama](https://ollama.com) as inference eng
 ## 🚀 Quickstart: Add New Knowledge via RAG
 
 ### Installation
-#### Prerequisites
+#### 1. Prerequisites
 - [docker](https://www.docker.com/) installed
 
-#### Clone the repository
+#### 2. Clone the repository
 ```sh
 git clone https://github.com/INGV/RockGPT.git
 cd RockGPT
 ```
 
-#### Get the _dataset_ for OpenWebUI and unzip it
+#### 3. Get the _dataset_ for OpenWebUI and unzip it
 ```sh
 cd openwebui/
 curl -L -O "https://webservices.ingv.it/rockgpt-open-webui.zip"
@@ -25,29 +25,29 @@ unzip rockgpt-open-webui.zip
 cd ..
 ```
 
-#### Start the services
+#### 4. Start the services
 ```sh
 docker compose up -d
 ```
 
-#### Get Ollama models
+#### 5. Get Ollama models
 ```sh
-docker exec -i ollama ollama pull mistral-7b-instruct
-docker exec -i ollama ollama pull deepseek-r1:32b
-docker exec -i ollama ollama pull gemma2:27b
-docker exec -i ollama ollama pull llama3.3:70b-instruct-q3_K_S
-docker exec -i ollama ollama pull orca2:13b
-docker exec -i ollama ollama pull phi4:latest
-docker exec -i ollama ollama pull qwen2.5:72b-instruct
+docker compose exec ollama bash -c "ollama pull mistral:7b"
+docker compose exec ollama bash -c "ollama pull deepseek-r1:32b"
+docker compose exec ollama bash -c "ollama pull gemma2:27b"
+docker compose exec ollama bash -c "ollama pull llama3.3:70b-instruct-q3_K_S"
+docker compose exec ollama bash -c "ollama pull orca2:13b"
+docker compose exec ollama bash -c "ollama pull phi4:latest"
+docker compose exec ollama bash -c "ollama pull qwen2.5:72b-instruct"
 ```
 
-### 1. Access the Interface
+### Access the Interface
 - Open your browser and go to: `http://localhost:8585`  
 
-### 2. Login
+### Login
 - Enter your username and password  
 
-### 3. Create a New Knowledge Base
+### Create a New Knowledge Base
 - On the **left sidebar**, click the **Workspace icon**
 - On the **top bar**, select the **Knowledge** tab
 - Click the **"Create new knowledge base"** button (top-right)
@@ -55,12 +55,12 @@ docker exec -i ollama ollama pull qwen2.5:72b-instruct
 
 > ℹ️ The system already includes a default knowledge base with 28 open-access scientific papers.
 
-### 4. Attach the Knowledge Base to a Model
+### Attach the Knowledge Base to a Model
 - Navigate to: `Workspace > Models > Create New Model`
 - Select a **foundational model**
 - Choose the **knowledge base** you just created to bind it to the new model
 
-### 5. Advanced RAG Configuration
+### Advanced RAG Configuration
 - For fine-tuning RAG settings (e.g., chunk size, embedding model, retriever strategy), refer to the [OpenWebUI documentation](https://docs.openwebui.com/)
 
 ---
