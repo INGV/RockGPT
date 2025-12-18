@@ -11,10 +11,19 @@ This version is containerized with:
 ## 🚀 Quickstart: Add New Knowledge via RAG
 
 ### Installation
+
+⚠️ **Important note about performance**
+
+The use of **GPU acceleration is strongly recommended**.  
+Running RockGPT with **CPU-only** may lead to **very slow inference**, high memory usage, or models **failing to load or operate correctly**, especially for large models (e.g. 32B, 70B, 72B).
+
+For a reliable and usable experience, we highly recommend deploying RockGPT on a system equipped with **NVIDIA GPUs**.
+
+
 #### 1. Prerequisites (CPU)
 
-- [Docker](https://www.docker.com/) installed
-- **Docker Compose v2** (`docker compose`)
+- Docker 19.03+
+- Docker Compose v2
 
 Verify Docker installation:
 
