@@ -1,15 +1,48 @@
 # 🪨 RockGPT (Containerized Version)
 
 **RockGPT** is a self-hosted, open-source conversational assistant specialized in **geoscience knowledge**. It uses **Retrieval-Augmented Generation (RAG)** to integrate scientific content into LLM responses.  
-This version is containerized with [Ollama](https://ollama.com) as inference engine and [OpenWebUI](https://github.com/open-webui/open-webui) as user interface.
+
+This version is containerized with:
+- [Ollama](https://ollama.com) as the inference engine
+- [OpenWebUI](https://github.com/open-webui/open-webui) as the user interface
 
 ---
 
 ## 🚀 Quickstart: Add New Knowledge via RAG
 
 ### Installation
-#### 1. Prerequisites
-- [docker](https://www.docker.com/) installed
+#### 1. Prerequisites (CPU)
+
+- [Docker](https://www.docker.com/) installed
+- **Docker Compose v2** (`docker compose`)
+
+Verify Docker installation:
+
+```sh
+docker compose version
+```
+
+#### 1a. Prerequisites (GPU – Important)
+
+To enable GPU acceleration (NVIDIA), your system must have:
+
+- An NVIDIA GPU
+- Recent NVIDIA drivers
+- NVIDIA Container Toolkit
+- Docker 19.03+
+- Docker Compose v2
+
+Verify GPU availability:
+```
+nvidia-smi
+```
+
+Verify Docker GPU support:
+```sh
+docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+```
+
+If this command works, Docker can access the GPU correctly.
 
 #### 2. Clone the repository
 ```sh
@@ -26,11 +59,26 @@ cd ..
 ```
 
 #### 4. Start the services
+
+##### CPU-only (default)
+
 ```sh
 docker compose up -d
 ```
 
+##### With GPU acceleration (recommended)
+
+If your system has a compatible NVIDIA GPU, start the stack with:
+```sh
+docker compose -f compose.yml -f compose-gpu.yml up -d
+```
+
+This enables GPU usage only for the Ollama service.
+
 #### 5. Get Ollama models
+
+**Note**: Large models (`32B` / `70B` / `72B`) are strongly recommended with GPU support.
+
 ```sh
 docker compose exec ollama bash -c "ollama pull mixtral:8x7b"
 docker compose exec ollama bash -c "ollama pull deepseek-r1:32b"

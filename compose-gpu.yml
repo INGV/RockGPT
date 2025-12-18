@@ -1,0 +1,10 @@
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: ["gpu"]
+              count: all # Adjust count for the number of GPUs you want to use
+
