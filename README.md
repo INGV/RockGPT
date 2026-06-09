@@ -96,6 +96,7 @@ docker compose exec ollama bash -c "ollama pull llama3.3:70b-instruct-q3_K_S"
 docker compose exec ollama bash -c "ollama pull orca2:13b"
 docker compose exec ollama bash -c "ollama pull phi4:latest"
 docker compose exec ollama bash -c "ollama pull qwen2.5:72b-instruct"
+docker compose exec ollama bash -c "ollama pull qwen3.6:35b"
 ```
 
 ### Access the Interface
