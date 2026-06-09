@@ -7,6 +7,21 @@ services:
     pull_policy: always
     tty: true
     restart: unless-stopped
+    environment:
+      # Quantized KV cache: reduces VRAM used by the cache ~4x (f16 -> q4_0).
+      # Without this, a 131K context on deepseek-r1:32b consumes ~32GB of KV cache,
+      # forcing some model layers to run on CPU.
+      #
+      # How to check if your GPUs have enough VRAM:
+      #   1. Total GPU VRAM (e.g. 2x V100 32GB = 64GB)
+      #   2. Subtract the model size (see "ollama list", SIZE column)
+      #   3. The remainder is available for KV cache
+      #   4. After loading, verify with "docker exec ollama ollama ps":
+      #      - PROCESSOR column should show "100% GPU" (or close)
+      #      - If it shows "XX%/YY% CPU/GPU", VRAM is insufficient: reduce context
+      #        in Open WebUI (num_ctx parameter) or use a smaller model
+      - OLLAMA_KV_CACHE_TYPE=q8_0
+      - OLLAMA_FLASH_ATTENTION=1
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-0.6.36-cuda}
@@ -16,11 +31,12 @@ services:
     depends_on:
       - ollama
     ports:
-      - ${OPEN_WEBUI_PORT-3000}:8080
+      - ${OPEN_WEBUI_PORT:-8585}:8080
     environment:
       - 'OLLAMA_BASE_URL=http://ollama:11434'
       - 'WEBUI_SECRET_KEY='
       - 'GLOBAL_LOG_LEVEL=INFO'
+      - 'WEBUI_AUTH=False'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
