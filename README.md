@@ -89,6 +89,7 @@ docker compose up -d
 **Note**: Large models (`32B` / `70B` / `72B`) are strongly recommended with GPU support.
 
 ```sh
+docker compose exec ollama bash -c "ollama pull gpt-oss:20b"
 docker compose exec ollama bash -c "ollama pull mixtral:8x7b"
 docker compose exec ollama bash -c "ollama pull deepseek-r1:32b"
 docker compose exec ollama bash -c "ollama pull gemma2:27b"
