@@ -100,13 +100,39 @@ docker compose exec ollama bash -c "ollama pull qwen2.5:72b-instruct"
 docker compose exec ollama bash -c "ollama pull qwen3.6:35b"
 ```
 
-### Access the Interface
-- Open your browser and go to: `http://localhost:8585`  
-  - Email: `admin@test-email.com`
-  - Password: `adminpass`
+#### 6. Verify GPU offload
 
-### Login
-- Enter your username and password  
+After loading a model, check that it runs entirely on the GPU:
+
+```sh
+docker compose exec ollama bash -c "ollama ps"
+```
+
+The `PROCESSOR` column should read `100% GPU`. A value like `40%/60% CPU/GPU` means there is not enough
+VRAM: reduce the context size in Open WebUI (`num_ctx`) or use a smaller model. See the inline comments
+in `compose.yml` for the KV cache settings that mitigate this.
+
+### Configuration
+
+The following environment variables can be overridden when starting the stack:
+
+| Variable | Default | Description |
+|---|---|---|
+| `OPEN_WEBUI_PORT` | `8585` | Host port for the web interface |
+| `OLLAMA_PORT` | `11434` | Host port for the Ollama API |
+| `WEBUI_DOCKER_TAG` | `0.6.36-cuda` | Open WebUI image tag |
+| `OLLAMA_DOCKER_TAG` | `latest` | Ollama image tag |
+
+### Access the Interface
+- Open your browser and go to: `http://localhost:8585`
+
+> ℹ️ Authentication is **disabled** by default (`WEBUI_AUTH=False` in `compose.yml`): the interface opens
+> directly on the preloaded admin account, with no login prompt.
+>
+> To enable authentication, set `WEBUI_AUTH=True` in `compose.yml` and restart the stack. You can then
+> sign in with the account shipped in the dataset:
+> - Email: `admin@test-email.com`
+> - Password: `adminpass`
 
 ### Create a New Knowledge Base
 - On the **left sidebar**, click the **Workspace icon**
@@ -128,14 +154,23 @@ docker compose exec ollama bash -c "ollama pull qwen3.6:35b"
 
 ## 📁 Project Structure
 ```
-rockgpt/
-├── docker-compose.yml
+RockGPT/
+├── compose.yml                     # Base stack: ollama + open-webui
+├── compose-gpu.yml                 # Overlay: NVIDIA device reservation for ollama
 ├── ollama/
-│  └── models/      # Local LLMs (e.g., Mistral, LLaMA)
+│  └── data/                        # -> /root/.ollama, pulled models
 ├── openwebui/
-│  └── data/       # Knowledge base content
-└── README.md       # This file
+│  └── rockgpt-open-webui/          # -> /app/backend/data, unpacked from the dataset zip
+│     ├── webui.db                  # Users, chats, model definitions
+│     ├── vector_db/                # Chroma embeddings for RAG
+│     └── uploads/                  # Source documents of the knowledge base
+└── README.md                       # This file
 ```
+
+> ⚠️ The contents of `ollama/data/` and `openwebui/` are **not** tracked in git. After cloning, both
+> directories are empty: models come from `ollama pull`, the knowledge base from the dataset zip
+> (step 3).
+
 ---
 
 ## 📚 Preloaded Knowledge
