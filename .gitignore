@@ -2,3 +2,4 @@ openwebui/*
 !openwebui/.gitkeep
 ollama/data/*
 !ollama/data/.gitkeep
+CLAUDE.md
