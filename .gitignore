@@ -3,3 +3,5 @@ openwebui/*
 ollama/data/*
 !ollama/data/.gitkeep
 CLAUDE.md
+CONTEXT.md
+docs/
