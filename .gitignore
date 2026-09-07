@@ -5,3 +5,6 @@ ollama/data/*
 CLAUDE.md
 CONTEXT.md
 docs/
+
+# Local deployment configuration, holds API keys
+.env

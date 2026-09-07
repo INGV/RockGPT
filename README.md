@@ -67,7 +67,32 @@ unzip rockgpt-open-webui.zip
 cd ..
 ```
 
-#### 4. Start the services
+#### 4. Create the configuration file
+
+The stack is configured through a `.env` file in the repository root. Docker Compose reads it
+automatically, so the deployment is fully described by the repository plus this single file, and
+`docker compose up -d` is reproducible with no variables exported by hand.
+
+```sh
+cp env.example .env
+chmod 600 .env
+```
+
+Then edit `.env`. Every variable is optional and falls back to the default in `compose.yml`, but
+**pinning the two image tags is strongly recommended**: Open WebUI migrates its database forward on
+start and cannot migrate it back, so an unintended tag change can break an existing deployment.
+
+```sh
+OLLAMA_DOCKER_TAG=0.24.0
+WEBUI_DOCKER_TAG=v0.9.6-cuda
+OPEN_WEBUI_PORT=8585
+OLLAMA_PORT=11434
+```
+
+> ⚠️ `.env` holds the API keys and is listed in `.gitignore`. Never commit it, and never hardcode a
+> key in `compose.yml`.
+
+#### 5. Start the services
 
 ##### With GPU acceleration (recommended)
 
@@ -84,7 +109,7 @@ This enables GPU usage only for the Ollama service.
 docker compose up -d
 ```
 
-#### 5. Get Ollama models
+#### 6. Get Ollama models
 
 **Note**: Large models (`32B` / `70B` / `72B`) are strongly recommended with GPU support.
 
@@ -100,7 +125,7 @@ docker compose exec ollama bash -c "ollama pull qwen2.5:72b-instruct"
 docker compose exec ollama bash -c "ollama pull qwen3.6:35b"
 ```
 
-#### 6. Verify GPU offload
+#### 7. Verify GPU offload
 
 After loading a model, check that it runs entirely on the GPU:
 
@@ -114,22 +139,35 @@ in `compose.yml` for the KV cache settings that mitigate this.
 
 ### Configuration
 
-The following environment variables can be overridden when starting the stack:
+All the variables below are read from `.env` (see step 4). They are optional: an empty or missing
+variable falls back to the default listed here.
 
 | Variable | Default | Description |
 |---|---|---|
+| `OLLAMA_DOCKER_TAG` | `latest` | Ollama image tag. Pin it. |
+| `WEBUI_DOCKER_TAG` | `0.6.36-cuda` | Open WebUI image tag. Pin it: downgrades break the database. |
 | `OPEN_WEBUI_PORT` | `8585` | Host port for the web interface |
 | `OLLAMA_PORT` | `11434` | Host port for the Ollama API |
-| `WEBUI_DOCKER_TAG` | `0.6.36-cuda` | Open WebUI image tag |
-| `OLLAMA_DOCKER_TAG` | `latest` | Ollama image tag |
+| `WEBUI_AUTH` | `False` | `False` skips the login prompt entirely. Set it to `True` on a networked host. |
+| `WEBUI_SECRET_KEY` | *(empty)* | Session signing key. Empty means Open WebUI generates and persists one. |
+| `GLOBAL_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
+| `OPENAI_API_BASE_URLS` | *(empty)* | Optional OpenAI-compatible backend alongside Ollama, comma-separated |
+| `OPENAI_API_KEYS` | *(empty)* | Keys for the URLs above, in the same order, comma-separated |
+
+Check the resolved configuration before starting, to make sure `.env` is being picked up:
+
+```sh
+docker compose -f compose.yml -f compose-gpu.yml config
+```
 
 ### Access the Interface
 - Open your browser and go to: `http://localhost:8585`
 
-> ℹ️ Authentication is **disabled** by default (`WEBUI_AUTH=False` in `compose.yml`): the interface opens
-> directly on the preloaded admin account, with no login prompt.
+> ℹ️ Authentication is **disabled** by default (`WEBUI_AUTH=False`): the interface opens directly on
+> the preloaded admin account, with no login prompt. On a host reachable from the network this means
+> anyone who can open the port has full access, including to the configured API keys.
 >
-> To enable authentication, set `WEBUI_AUTH=True` in `compose.yml` and restart the stack. You can then
+> To enable authentication, set `WEBUI_AUTH=True` in `.env` and restart the stack. You can then
 > sign in with the account shipped in the dataset:
 > - Email: `admin@test-email.com`
 > - Password: `adminpass`
@@ -157,6 +195,8 @@ The following environment variables can be overridden when starting the stack:
 RockGPT/
 ├── compose.yml                     # Base stack: ollama + open-webui
 ├── compose-gpu.yml                 # Overlay: NVIDIA device reservation for ollama
+├── env.example                     # Template for .env
+├── .env                            # Local configuration, gitignored, holds the API keys
 ├── ollama/
 │  └── data/                        # -> /root/.ollama, pulled models
 ├── openwebui/
