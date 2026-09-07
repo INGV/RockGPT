@@ -145,7 +145,7 @@ variable falls back to the default listed here.
 | Variable | Default | Description |
 |---|---|---|
 | `OLLAMA_DOCKER_TAG` | `latest` | Ollama image tag. Pin it. |
-| `WEBUI_DOCKER_TAG` | `0.6.36-cuda` | Open WebUI image tag. Pin it: downgrades break the database. |
+| `WEBUI_DOCKER_TAG` | `v0.9.6-cuda` | Open WebUI image tag. Pin it: downgrades break the database. |
 | `OPEN_WEBUI_PORT` | `8585` | Host port for the web interface |
 | `OLLAMA_PORT` | `11434` | Host port for the Ollama API |
 | `WEBUI_AUTH` | `False` | `False` skips the login prompt entirely. Set it to `True` on a networked host. |

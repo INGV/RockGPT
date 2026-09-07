@@ -27,7 +27,7 @@ services:
       - OLLAMA_CONTEXT_LENGTH=32768
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-0.6.36-cuda}
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-v0.9.6-cuda}
     container_name: open-webui
     volumes:
       - ./openwebui/rockgpt-open-webui:/app/backend/data
