@@ -144,7 +144,7 @@ variable falls back to the default listed here.
 
 | Variable | Default | Description |
 |---|---|---|
-| `OLLAMA_DOCKER_TAG` | `latest` | Ollama image tag. Pin it. |
+| `OLLAMA_DOCKER_TAG` | `0.24.0` | Ollama image tag. Pin it, and read the note below before raising it. |
 | `WEBUI_DOCKER_TAG` | `v0.11.3-cuda` | Open WebUI image tag. Pin it: downgrades break the database. |
 | `OPEN_WEBUI_PORT` | `8585` | Host port for the web interface |
 | `OLLAMA_PORT` | `11434` | Host port for the Ollama API |
@@ -155,6 +155,22 @@ variable falls back to the default listed here.
 | `OPENAI_API_KEYS` | *(empty)* | Keys for the URLs above, in the same order, comma-separated |
 | `DEFAULT_MODEL_PARAMS` | *(empty)* | Default parameters for every model, as JSON. See the note below. |
 | `TASK_MODEL_EXTERNAL` | *(empty)* | Model for background tasks when the chat runs on an external backend |
+
+#### Ollama on Volta GPUs (Tesla V100)
+
+`OLLAMA_DOCKER_TAG` is pinned to `0.24.0` on purpose. Ollama dropped compute capability 7.0 from its
+CUDA builds after that release, and the failure is not graceful:
+
+| Version | Behaviour on a V100 |
+|---|---|
+| `0.24.0` | works, model fully on GPU |
+| `0.30.0` – `0.30.10` | GPUs are detected, then the model load aborts with `CUDA error: device kernel image is invalid` |
+| `0.30.11` and later | GPUs are rejected up front with `NVIDIA driver too old, required_driver "550 or newer"`, and inference silently falls back to CPU, about 7x slower |
+
+There are no `0.25` to `0.29` releases: the series goes straight from `0.24.0` to `0.30.0`.
+
+A newer NVIDIA driver lifts the second check but does not necessarily fix the first, which is an
+architecture problem, not a driver one. On newer hardware none of this applies — raise the tag.
 
 #### Function calling and the task model
 
