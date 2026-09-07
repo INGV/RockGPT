@@ -27,7 +27,7 @@ services:
       - OLLAMA_CONTEXT_LENGTH=32768
 
   open-webui:
-    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-v0.9.6-cuda}
+    image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-v0.11.3-cuda}
     container_name: open-webui
     volumes:
       - ./openwebui/rockgpt-open-webui:/app/backend/data
@@ -44,6 +44,20 @@ services:
       - 'OPENAI_API_KEYS=${OPENAI_API_KEYS:-}'
       - 'WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}'
       - 'GLOBAL_LOG_LEVEL=${GLOBAL_LOG_LEVEL:-INFO}'
+      # Open WebUI 0.11 defaults function calling to "native", which attaches the
+      # tool list to every request. Models without tool support then fail hard:
+      # Ollama answers 400 "does not support tools" and an OpenAI-compatible
+      # gateway answers 500, and the chat shows an empty reply. Set this to
+      # {"function_calling":"legacy"} in .env to get the prompt-based mode used
+      # up to 0.9.x, which works with every model. No default is given here
+      # because Compose interpolation cannot express a "}" inside one.
+      - 'DEFAULT_MODEL_PARAMS=${DEFAULT_MODEL_PARAMS:-}'
+      # Model used for background tasks (chat title, tags, follow-up questions)
+      # when the chat itself runs on an external backend. Empty means "reuse the
+      # chat model", but 0.11 forwards that as an empty model id, and the gateway
+      # rejects it with "Model '' was not found" inside the reply. Name a small
+      # local model instead.
+      - 'TASK_MODEL_EXTERNAL=${TASK_MODEL_EXTERNAL:-}'
       # False opens the UI directly on the preloaded admin account, with no login
       # prompt. Set it to True on any host reachable beyond localhost.
       - 'WEBUI_AUTH=${WEBUI_AUTH:-False}'

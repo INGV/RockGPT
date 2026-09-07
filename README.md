@@ -84,7 +84,7 @@ start and cannot migrate it back, so an unintended tag change can break an exist
 
 ```sh
 OLLAMA_DOCKER_TAG=0.24.0
-WEBUI_DOCKER_TAG=v0.9.6-cuda
+WEBUI_DOCKER_TAG=v0.11.3-cuda
 OPEN_WEBUI_PORT=8585
 OLLAMA_PORT=11434
 ```
@@ -145,7 +145,7 @@ variable falls back to the default listed here.
 | Variable | Default | Description |
 |---|---|---|
 | `OLLAMA_DOCKER_TAG` | `latest` | Ollama image tag. Pin it. |
-| `WEBUI_DOCKER_TAG` | `v0.9.6-cuda` | Open WebUI image tag. Pin it: downgrades break the database. |
+| `WEBUI_DOCKER_TAG` | `v0.11.3-cuda` | Open WebUI image tag. Pin it: downgrades break the database. |
 | `OPEN_WEBUI_PORT` | `8585` | Host port for the web interface |
 | `OLLAMA_PORT` | `11434` | Host port for the Ollama API |
 | `WEBUI_AUTH` | `False` | `False` skips the login prompt entirely. Set it to `True` on a networked host. |
@@ -153,6 +153,27 @@ variable falls back to the default listed here.
 | `GLOBAL_LOG_LEVEL` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL` |
 | `OPENAI_API_BASE_URLS` | *(empty)* | Optional OpenAI-compatible backend alongside Ollama, comma-separated |
 | `OPENAI_API_KEYS` | *(empty)* | Keys for the URLs above, in the same order, comma-separated |
+| `DEFAULT_MODEL_PARAMS` | *(empty)* | Default parameters for every model, as JSON. See the note below. |
+| `TASK_MODEL_EXTERNAL` | *(empty)* | Model for background tasks when the chat runs on an external backend |
+
+#### Function calling and the task model
+
+Open WebUI 0.11 changed the function calling default from prompt-based to **native**: the tool list
+is attached to every request. Models without native tool support then fail hard — Ollama answers
+`400 <model> does not support tools`, an OpenAI-compatible gateway answers `500` — and the user only
+sees an empty reply. `DEFAULT_MODEL_PARAMS={"function_calling":"legacy"}` restores the prompt-based
+mode, which works with every model, retrieval on a knowledge base included.
+
+`TASK_MODEL_EXTERNAL` names the model that generates chat titles, tags and follow-up questions when
+the chat itself runs on an external backend. Left empty it means "reuse the chat model", but 0.11
+forwards that as an empty model id, and a gateway rejects it: the string `Model '' was not found`
+ends up inside the reply. Point it at a small local model, e.g. `phi4:latest`.
+
+> ⚠️ Both variables only **seed a fresh database**. Open WebUI stores them on first start and from
+> then on the stored value wins, so changing `.env` on a running deployment has no effect. There,
+> change them in the interface instead:
+> - Admin Settings → Models → Model Defaults → Model Parameters → Function Calling
+> - Admin Settings → Interface → Tasks → External Task Model
 
 Check the resolved configuration before starting, to make sure `.env` is being picked up:
 
