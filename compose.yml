@@ -1,11 +1,12 @@
 services:
   ollama:
-    # Pinned, and not to the newest release: Ollama dropped compute 7.0 (Volta)
-    # from its CUDA builds after 0.24.0. On a Tesla V100 every 0.30.x up to
-    # 0.30.10 aborts at model load with "CUDA error: device kernel image is
-    # invalid", and 0.30.11 onwards refuses the GPU outright with "NVIDIA driver
-    # too old, required_driver 550 or newer" and silently runs on CPU, roughly
-    # 7x slower. Check both before raising this on Volta hardware.
+    # Pinned, and not to the newest release: releases after 0.24.0 build their
+    # CUDA 12 backend with a toolkit that needs NVIDIA driver 550 or newer. On a
+    # host still on 535 every 0.30.x up to 0.30.10 aborts at model load with
+    # "CUDA error: device kernel image is invalid", and 0.30.11 onwards names the
+    # cause and falls back to CPU, roughly 7x slower. The GPU architecture is not
+    # the problem: compute 7.0 is still in the CUDA 12 build. Check the host
+    # driver with "nvidia-smi" before raising this.
     image: ollama/ollama:${OLLAMA_DOCKER_TAG:-0.24.0}
     volumes:
       - ./ollama/data:/root/.ollama

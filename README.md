@@ -156,10 +156,11 @@ variable falls back to the default listed here.
 | `DEFAULT_MODEL_PARAMS` | *(empty)* | Default parameters for every model, as JSON. See the note below. |
 | `TASK_MODEL_EXTERNAL` | *(empty)* | Model for background tasks when the chat runs on an external backend |
 
-#### Ollama on Volta GPUs (Tesla V100)
+#### Ollama and the NVIDIA driver
 
-`OLLAMA_DOCKER_TAG` is pinned to `0.24.0` on purpose. Ollama dropped compute capability 7.0 from its
-CUDA builds after that release, and the failure is not graceful:
+`OLLAMA_DOCKER_TAG` is pinned to `0.24.0` on purpose. Releases after it build their CUDA 12 backend
+with a toolkit that requires **NVIDIA driver 550 or newer**, and on an older driver the failure is
+not graceful. Measured on a host with driver `535.104.05` and two Tesla V100:
 
 | Version | Behaviour on a V100 |
 |---|---|
@@ -169,8 +170,10 @@ CUDA builds after that release, and the failure is not graceful:
 
 There are no `0.25` to `0.29` releases: the series goes straight from `0.24.0` to `0.30.0`.
 
-A newer NVIDIA driver lifts the second check but does not necessarily fix the first, which is an
-architecture problem, not a driver one. On newer hardware none of this applies — raise the tag.
+The GPU architecture is not the constraint: compute capability 7.0 is still in the CUDA 12 preset of
+the current releases (`llama/server/CMakePresets.json`, `llama_cuda_v12_linux`). Both failures come
+from the same cause, the driver, so updating it to 550 or newer is enough to raise the tag. Verify
+the driver with `nvidia-smi` first.
 
 #### Function calling and the task model
 
