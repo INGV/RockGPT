@@ -156,6 +156,27 @@ variable falls back to the default listed here.
 | `DEFAULT_MODEL_PARAMS` | *(empty)* | Default parameters for every model, as JSON. See the note below. |
 | `TASK_MODEL_EXTERNAL` | *(empty)* | Model for background tasks when the chat runs on an external backend |
 
+Single sign-on and reverse proxy, all optional and all inert while the OIDC block is empty:
+
+| Variable | Default | Description |
+|---|---|---|
+| `OAUTH_PROVIDER_NAME` | *(empty)* | Name shown on the login button, e.g. `Keycloak` |
+| `OAUTH_CLIENT_ID` | *(empty)* | OIDC client id |
+| `OAUTH_CLIENT_SECRET` | *(empty)* | OIDC client secret. `.env` only, never in `compose.yml` |
+| `OPENID_PROVIDER_URL` | *(empty)* | Discovery document URL. Mind the `/auth` prefix on a legacy Keycloak |
+| `OPENID_REDIRECT_URI` | *(empty)* | Must match the provider's valid redirect URI exactly |
+| `OAUTH_SCOPES` | `openid email profile` | Requested scopes |
+| `ENABLE_OAUTH_SIGNUP` | `False` | Create an account on a first SSO login |
+| `DEFAULT_USER_ROLE` | `pending` | Role of that new account. `pending` requires an admin to approve |
+| `PENDING_USER_OVERLAY_TITLE` / `_CONTENT` | *(empty)* | Text shown to a pending account |
+| `OAUTH_MERGE_ACCOUNTS_BY_EMAIL` | `False` | Land on an existing local account with the same email |
+| `OAUTH_ALLOWED_DOMAINS` | `*` | Comma-separated allow-list of email domains |
+| `OAUTH_CODE_CHALLENGE_METHOD` | *(empty)* | Set to `S256` to send PKCE. Nothing is sent otherwise |
+| `ENABLE_LOGIN_FORM` | `True` | Keep the local email/password form as a break-glass door |
+| `WEBUI_URL` | *(empty)* | Public base URL as the browser sees it |
+| `WEBUI_SESSION_COOKIE_SECURE` | `False` | Mark the session cookie `Secure`. Set it behind an HTTPS proxy |
+| `WEBUI_AUTH_COOKIE_SECURE` | `False` | Same, for the auth cookie |
+
 #### Ollama and the NVIDIA driver
 
 `OLLAMA_DOCKER_TAG` is pinned to `0.24.0` on purpose. Releases after it build their CUDA 12 backend
@@ -188,6 +209,133 @@ the chat itself runs on an external backend. Left empty it means "reuse the chat
 forwards that as an empty model id, and a gateway rejects it: the string `Model '' was not found`
 ends up inside the reply. Point it at a small local model, e.g. `phi4:latest`.
 
+### Single sign-on (OIDC)
+
+Open WebUI can delegate authentication to an OpenID Connect provider. The INGV deployment uses
+Keycloak, but nothing below is Keycloak-specific except the paths.
+
+#### On the provider
+
+Create a **confidential** client:
+
+- Client authentication **on**; Authorization **off**
+- **Standard flow** only — no direct access grants, no service accounts, no implicit flow
+- Valid redirect URI, exact and without wildcards: `https://<your-host>/oauth/oidc/callback`
+- Web origins: `https://<your-host>`
+- The default `email` and `profile` client scopes must be assigned as **Default**, not Optional:
+  Open WebUI uses the `email` claim as the account key and cannot create a user without it
+
+No roles, no mappers, no dedicated client scope: see [Roles](#roles-and-permissions) for why.
+
+#### In `.env`
+
+```sh
+WEBUI_AUTH=True
+WEBUI_URL=https://<your-host>
+OAUTH_PROVIDER_NAME=Keycloak
+OAUTH_CLIENT_ID=<client id>
+OAUTH_CLIENT_SECRET=<client secret>
+OPENID_PROVIDER_URL=https://<keycloak>/realms/<realm>/.well-known/openid-configuration
+OPENID_REDIRECT_URI=https://<your-host>/oauth/oidc/callback
+ENABLE_OAUTH_SIGNUP=True
+OAUTH_MERGE_ACCOUNTS_BY_EMAIL=True
+DEFAULT_USER_ROLE=pending
+ENABLE_LOGIN_FORM=True
+WEBUI_SESSION_COOKIE_SECURE=True
+WEBUI_AUTH_COOKIE_SECURE=True
+```
+
+A Keycloak served under the legacy `/auth` prefix needs
+`https://<keycloak>/auth/realms/<realm>/.well-known/openid-configuration`; the modern path answers
+404 there, and the failure only surfaces as a generic login error.
+
+> ⚠️ Every `OAUTH_*` variable, plus `WEBUI_URL`, `ENABLE_LOGIN_FORM` and `DEFAULT_USER_ROLE`, is
+> **PersistentConfig**: `.env` seeds the database on the first start that reads it, and from then on
+> the stored value wins. On a running deployment, change them under
+> Admin Settings → Authentication, not in `.env`. Same caveat as `DEFAULT_MODEL_PARAMS` above.
+
+#### Behind a reverse proxy
+
+The proxy must forward `X-Forwarded-Proto` and `Host`, and must pass the WebSocket upgrade on
+`/ws/` — Open WebUI uses socket.io for streaming, and a proxy that swallows the upgrade answers
+`400` on `/ws/socket.io/`. With nginx:
+
+```nginx
+location /ws/ {
+    proxy_pass http://<upstream>;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade    $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_set_header Host       $http_host;
+    proxy_set_header X-Real-IP  $remote_addr;
+    proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 7d;
+}
+```
+
+Repeating the headers is required, not redundant: a `proxy_set_header` inside a `location` disables
+inheritance of every `proxy_set_header` set at the server level.
+
+#### PKCE
+
+Open WebUI sends no `code_challenge` unless `OAUTH_CODE_CHALLENGE_METHOD=S256` is set. Set it here
+first, confirm a login works, and only then make PKCE mandatory on the provider — the other order
+rejects every authorization request with `Missing parameter: code_challenge`.
+
+#### Logout
+
+Signing out of Open WebUI ends the local session only. The provider's session survives, so clicking
+the SSO button again signs the user straight back in without a password prompt. This is deliberate:
+a federated logout would also sign them out of every other application on the realm.
+
+### Roles and permissions
+
+Open WebUI has exactly three roles — `admin`, `user`, `pending` — and this deployment keeps them in
+its own database. `ENABLE_OAUTH_ROLE_MANAGEMENT` is deliberately **not** enabled: with it on, the
+role is recomputed from a token claim at every login, which silently undoes any promotion made from
+the admin interface. The provider answers *who you are*; Open WebUI decides *what you may do*.
+
+What a `user` may actually do is not the role but the **default user permissions**, under
+Admin Settings → Users: some sixty flags grouped into `workspace`, `sharing`, `chat`, `features` and
+`settings`. A read-only user is `user` with `workspace.*` and `sharing.*` off — they can chat and
+attach files to a chat, but cannot create models, knowledge bases, prompts or tools.
+
+Permissions layer in three levels, so a middle tier is a group and never a fourth role:
+
+1. **Default user permissions** — apply to every `user`
+2. **Groups** — add permissions on top, and grant access to specific models and knowledge bases
+3. **Per-resource access control** — each model, knowledge base or prompt is public, or restricted
+   to named groups or users
+
+Access is gated by `DEFAULT_USER_ROLE=pending`: anyone in the realm can authenticate, lands in a
+waiting screen, and an administrator promotes them under Admin Settings → Users. Opening the
+instance to everyone later is one value changed from `pending` to `user`.
+
+### Recovering an account
+
+Open WebUI has no password reset and no SMTP support, so a forgotten local password can only be
+fixed by rewriting the hash. With the stack stopped, so the SQLite database is not being written:
+
+```sh
+docker compose stop open-webui
+docker compose run --rm --no-deps --entrypoint "" open-webui python - <<'EOF'
+import sqlite3
+from open_webui.utils.auth import get_password_hash
+db = sqlite3.connect("/app/backend/data/webui.db")
+db.execute(
+    "UPDATE auth SET password = ? WHERE email = ?",
+    (get_password_hash("<new password>"), "<account email>"),
+)
+db.commit()
+EOF
+docker compose -f compose.yml -f compose-gpu.yml up -d
+```
+
+`docker compose run` is used rather than `docker exec` because the latter cannot attach to a stopped
+container. Hashing through `open_webui.utils.auth` keeps the bcrypt parameters the application
+expects. Back up `openwebui/rockgpt-open-webui/` first.
+
 > ⚠️ Both variables only **seed a fresh database**. Open WebUI stores them on first start and from
 > then on the stored value wins, so changing `.env` on a running deployment has no effect. There,
 > change them in the interface instead:
@@ -203,14 +351,18 @@ docker compose -f compose.yml -f compose-gpu.yml config
 ### Access the Interface
 - Open your browser and go to: `http://localhost:8585`
 
-> ℹ️ Authentication is **disabled** by default (`WEBUI_AUTH=False`): the interface opens directly on
+> ⚠️ Authentication is **disabled** by default (`WEBUI_AUTH=False`): the interface opens directly on
 > the preloaded admin account, with no login prompt. On a host reachable from the network this means
-> anyone who can open the port has full access, including to the configured API keys.
+> anyone who can open the port has full access, including to the configured API keys. Set
+> `WEBUI_AUTH=True` in `.env` there, and see [Single sign-on](#single-sign-on-oidc) below.
 >
-> To enable authentication, set `WEBUI_AUTH=True` in `.env` and restart the stack. You can then
-> sign in with the account shipped in the dataset:
-> - Email: `admin@test-email.com`
-> - Password: `adminpass`
+> The account preloaded in the dataset has a password generated by Open WebUI at first start, which
+> nobody knows. Reset it before enabling authentication, or you lock yourself out — Open WebUI has
+> **no password reset flow and no SMTP support**. See [Recovering an account](#recovering-an-account).
+>
+> Enabling authentication is a **one-way door**: the instance then accumulates users, and Open WebUI
+> refuses to start with authentication disabled and more than one user in the database. Back out by
+> restoring a backup of `openwebui/rockgpt-open-webui/`, not by setting `WEBUI_AUTH` to `False`.
 
 ### Create a New Knowledge Base
 - On the **left sidebar**, click the **Workspace icon**

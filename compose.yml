@@ -67,7 +67,65 @@ services:
       - 'TASK_MODEL_EXTERNAL=${TASK_MODEL_EXTERNAL:-}'
       # False opens the UI directly on the preloaded admin account, with no login
       # prompt. Set it to True on any host reachable beyond localhost.
+      #
+      # One-way door: once auth is on, the instance accumulates users, and Open
+      # WebUI refuses to start with auth disabled and more than one user in the
+      # database. Going back is a restore of the data directory, not a flip of
+      # this flag.
       - 'WEBUI_AUTH=${WEBUI_AUTH:-False}'
+      # Public base URL, as the browser sees it. Behind a reverse proxy this is
+      # the proxy's name, not the container's port: Open WebUI uses it to build
+      # the OAuth redirect and to scope the session cookie.
+      - 'WEBUI_URL=${WEBUI_URL:-}'
+      # Keep the local email/password form next to the OAuth button. It is the
+      # break-glass door: with SSO as the only way in, an outage of the identity
+      # provider locks out the administrators too, and Open WebUI has no password
+      # reset to recover with — it has no SMTP support at all.
+      - 'ENABLE_LOGIN_FORM=${ENABLE_LOGIN_FORM:-True}'
+      # Role given to an account created by a first SSO login. "pending" parks it
+      # in a waiting screen until an administrator promotes it, and that is the
+      # access gate: authentication is open to the whole realm, authorization is
+      # not. Set it to "user" to let everyone in automatically.
+      - 'DEFAULT_USER_ROLE=${DEFAULT_USER_ROLE:-pending}'
+
+      # --- OIDC single sign-on -----------------------------------------------
+      # The provider is an identity provider only: Open WebUI keeps ownership of
+      # roles, so ENABLE_OAUTH_ROLE_MANAGEMENT is deliberately left at its False
+      # default. Turning it on would recompute the role from a token claim at
+      # every login and silently undo any promotion made in the admin interface.
+      # See docs/adr/0002-manage-roles-in-open-webui-keycloak-as-idp-only.md
+      #
+      # Careful: everything in this block is PersistentConfig. These values seed
+      # the database on the first start that sees them, and from then on the
+      # stored value wins — editing .env afterwards has no effect. Change them
+      # under Admin Settings > Authentication instead.
+      - 'ENABLE_OAUTH_SIGNUP=${ENABLE_OAUTH_SIGNUP:-False}'
+      # Lets an SSO login land on an existing local account carrying the same
+      # email instead of creating a duplicate. Only safe with a single identity
+      # provider that verifies email addresses, which is the case here.
+      - 'OAUTH_MERGE_ACCOUNTS_BY_EMAIL=${OAUTH_MERGE_ACCOUNTS_BY_EMAIL:-False}'
+      - 'OAUTH_ALLOWED_DOMAINS=${OAUTH_ALLOWED_DOMAINS:-*}'
+      - 'OAUTH_PROVIDER_NAME=${OAUTH_PROVIDER_NAME:-}'
+      - 'OAUTH_CLIENT_ID=${OAUTH_CLIENT_ID:-}'
+      # Never hardcode the secret here: it goes in .env, which is gitignored.
+      - 'OAUTH_CLIENT_SECRET=${OAUTH_CLIENT_SECRET:-}'
+      - 'OPENID_PROVIDER_URL=${OPENID_PROVIDER_URL:-}'
+      - 'OPENID_REDIRECT_URI=${OPENID_REDIRECT_URI:-}'
+      - 'OAUTH_SCOPES=${OAUTH_SCOPES:-openid email profile}'
+      # PKCE is opt-in for the login client: left unset, Open WebUI sends no
+      # code_challenge at all. Set it to S256 here *before* making PKCE mandatory
+      # on the provider, or the authorization request comes back rejected.
+      - 'OAUTH_CODE_CHALLENGE_METHOD=${OAUTH_CODE_CHALLENGE_METHOD:-}'
+      # Both default to false, which is right for plain HTTP on localhost and
+      # wrong behind an HTTPS proxy. Leave the SameSite policy at its "lax"
+      # default: "strict" drops the cookie on the OAuth callback, which arrives
+      # as a cross-site top-level navigation, and the login loops silently.
+      - 'WEBUI_SESSION_COOKIE_SECURE=${WEBUI_SESSION_COOKIE_SECURE:-False}'
+      - 'WEBUI_AUTH_COOKIE_SECURE=${WEBUI_AUTH_COOKIE_SECURE:-False}'
+      # Text shown to a "pending" account. The default says nothing about who to
+      # ask for approval, so name a contact.
+      - 'PENDING_USER_OVERLAY_TITLE=${PENDING_USER_OVERLAY_TITLE:-}'
+      - 'PENDING_USER_OVERLAY_CONTENT=${PENDING_USER_OVERLAY_CONTENT:-}'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
