@@ -254,10 +254,11 @@ A Keycloak served under the legacy `/auth` prefix needs
 > deployment that already has them stored, change them under Admin Settings → General and
 > → Users, not in `.env`. Same caveat as `DEFAULT_MODEL_PARAMS` above.
 >
-> The `OAUTH_*` variables are declared PersistentConfig too, but 0.11.3 does not expose them in the
-> admin interface and never writes them to the database, so `.env` stays authoritative for them.
-> Apply a change by **recreating** the container — `docker compose up -d`, not
-> `docker compose restart`, which reuses the container and does not re-read the environment.
+> The `OAUTH_*` and `OPENID_*` variables are the exception. They are declared PersistentConfig too,
+> but `ENABLE_OAUTH_PERSISTENT_CONFIG` defaults to `False`, so they are re-read from the environment
+> at every start and never stored: `.env` stays authoritative for them, and they are not editable
+> from the admin interface. Apply a change by **recreating** the container — `docker compose up -d`,
+> not `docker compose restart`, which reuses the container and does not re-read the environment.
 
 `OAUTH_ALLOWED_DOMAINS` matches the full domain exactly, not a suffix: `example.org` rejects
 `someone@dept.example.org`, and that person sees a generic login error rather than the pending

@@ -95,11 +95,12 @@ services:
       # every login and silently undo any promotion made in the admin interface.
       # See docs/adr/0002-manage-roles-in-open-webui-keycloak-as-idp-only.md
       #
-      # These keys are declared PersistentConfig, but 0.11.3 neither exposes them
-      # in the admin interface nor writes them to the database, so .env stays
-      # authoritative. Apply a change by recreating the container with
-      # "docker compose up -d" — "restart" reuses the container and does not
-      # re-read the environment.
+      # These keys are declared PersistentConfig but exempted from it by
+      # ENABLE_OAUTH_PERSISTENT_CONFIG, which defaults to False: they are re-read
+      # from the environment at every start and never stored. So .env stays
+      # authoritative here, unlike everywhere else. Apply a change by recreating
+      # the container with "docker compose up -d" — "restart" reuses the
+      # container and does not re-read the environment.
       - 'ENABLE_OAUTH_SIGNUP=${ENABLE_OAUTH_SIGNUP:-False}'
       # Lets an SSO login land on an existing local account carrying the same
       # email instead of creating a duplicate. Only safe with a single identity
