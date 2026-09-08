@@ -249,10 +249,20 @@ A Keycloak served under the legacy `/auth` prefix needs
 `https://<keycloak>/auth/realms/<realm>/.well-known/openid-configuration`; the modern path answers
 404 there, and the failure only surfaces as a generic login error.
 
-> ⚠️ Every `OAUTH_*` variable, plus `WEBUI_URL`, `ENABLE_LOGIN_FORM` and `DEFAULT_USER_ROLE`, is
-> **PersistentConfig**: `.env` seeds the database on the first start that reads it, and from then on
-> the stored value wins. On a running deployment, change them under
-> Admin Settings → Authentication, not in `.env`. Same caveat as `DEFAULT_MODEL_PARAMS` above.
+> ⚠️ `WEBUI_URL`, `ENABLE_LOGIN_FORM` and `DEFAULT_USER_ROLE` are **PersistentConfig**: `.env` seeds
+> the database on the first start that reads it, and from then on the stored value wins. On a
+> deployment that already has them stored, change them under Admin Settings → General and
+> → Users, not in `.env`. Same caveat as `DEFAULT_MODEL_PARAMS` above.
+>
+> The `OAUTH_*` variables are declared PersistentConfig too, but 0.11.3 does not expose them in the
+> admin interface and never writes them to the database, so `.env` stays authoritative for them.
+> Apply a change by **recreating** the container — `docker compose up -d`, not
+> `docker compose restart`, which reuses the container and does not re-read the environment.
+
+`OAUTH_ALLOWED_DOMAINS` matches the full domain exactly, not a suffix: `example.org` rejects
+`someone@dept.example.org`, and that person sees a generic login error rather than the pending
+screen. List every subdomain in use, or leave it at `*` and let `DEFAULT_USER_ROLE=pending` be the
+gate.
 
 #### Behind a reverse proxy
 
