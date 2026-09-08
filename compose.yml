@@ -114,6 +114,13 @@ services:
       - 'OPENID_PROVIDER_URL=${OPENID_PROVIDER_URL:-}'
       - 'OPENID_REDIRECT_URI=${OPENID_REDIRECT_URI:-}'
       - 'OAUTH_SCOPES=${OAUTH_SCOPES:-openid email profile}'
+      # Where the provider sends the browser after logout. 0.11 always redirects
+      # an OAuth session to the provider's end_session_endpoint — there is no way
+      # to keep the logout local — and without this it sends no
+      # post_logout_redirect_uri, leaving the user on a provider page. Keycloak
+      # answers "Invalid redirect uri" unless the value is also registered on the
+      # client, under "Valid post logout redirect URIs".
+      - 'WEBUI_AUTH_SIGNOUT_REDIRECT_URL=${WEBUI_AUTH_SIGNOUT_REDIRECT_URL:-}'
       # PKCE is opt-in for the login client: left unset, Open WebUI sends no
       # code_challenge at all. Set it to S256 here *before* making PKCE mandatory
       # on the provider, or the authorization request comes back rejected.

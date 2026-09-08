@@ -176,6 +176,7 @@ Single sign-on and reverse proxy, all optional and all inert while the OIDC bloc
 | `WEBUI_URL` | *(empty)* | Public base URL as the browser sees it |
 | `WEBUI_SESSION_COOKIE_SECURE` | `False` | Mark the session cookie `Secure`. Set it behind an HTTPS proxy |
 | `WEBUI_AUTH_COOKIE_SECURE` | `False` | Same, for the auth cookie |
+| `WEBUI_AUTH_SIGNOUT_REDIRECT_URL` | *(empty)* | Where the provider returns the browser after logout. Must be registered on the client |
 
 #### Ollama and the NVIDIA driver
 
@@ -296,9 +297,20 @@ rejects every authorization request with `Missing parameter: code_challenge`.
 
 #### Logout
 
-Signing out of Open WebUI ends the local session only. The provider's session survives, so clicking
-the SSO button again signs the user straight back in without a password prompt. This is deliberate:
-a federated logout would also sign them out of every other application on the realm.
+**There is no local-only logout for an SSO session.** Open WebUI 0.11 always redirects a session
+that came from OAuth to the provider's `end_session_endpoint`, so signing out of RockGPT also ends
+the provider session — and therefore the session of every other application on that realm. There is
+no setting to opt out.
+
+Set `WEBUI_AUTH_SIGNOUT_REDIRECT_URL` to the login page and register the **same URL** on the client
+under *Valid post logout redirect URIs*:
+
+```sh
+WEBUI_AUTH_SIGNOUT_REDIRECT_URL=https://<your-host>/auth
+```
+
+Left empty, Open WebUI sends no `post_logout_redirect_uri` at all and the user is stranded on a
+provider page; Keycloak answers `Invalid redirect uri`.
 
 ### Roles and permissions
 
