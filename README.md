@@ -83,7 +83,7 @@ Then edit `.env`. Every variable is optional and falls back to the default in `c
 start and cannot migrate it back, so an unintended tag change can break an existing deployment.
 
 ```sh
-OLLAMA_DOCKER_TAG=0.24.0
+OLLAMA_DOCKER_TAG=0.34.0
 WEBUI_DOCKER_TAG=v0.11.3-cuda
 OPEN_WEBUI_PORT=8585
 OLLAMA_PORT=11434
@@ -144,7 +144,7 @@ variable falls back to the default listed here.
 
 | Variable | Default | Description |
 |---|---|---|
-| `OLLAMA_DOCKER_TAG` | `0.24.0` | Ollama image tag. Pin it, and read the note below before raising it. |
+| `OLLAMA_DOCKER_TAG` | `0.34.0` | Ollama image tag. Pin it, and check the NVIDIA driver note below before raising it. |
 | `WEBUI_DOCKER_TAG` | `v0.11.3-cuda` | Open WebUI image tag. Pin it: downgrades break the database. |
 | `OPEN_WEBUI_PORT` | `8585` | Host port for the web interface |
 | `OLLAMA_PORT` | `11434` | Host port for the Ollama API |
@@ -158,22 +158,25 @@ variable falls back to the default listed here.
 
 #### Ollama and the NVIDIA driver
 
-`OLLAMA_DOCKER_TAG` is pinned to `0.24.0` on purpose. Releases after it build their CUDA 12 backend
-with a toolkit that requires **NVIDIA driver 550 or newer**, and on an older driver the failure is
-not graceful. Measured on a host with driver `535.104.05` and two Tesla V100:
+Every release after `0.24.0` builds its CUDA 12 backend with a toolkit that requires **NVIDIA
+driver 550 or newer**, and on an older driver the failure is not graceful. Check the host with
+`nvidia-smi` before raising the tag: on driver 535 stay on `0.24.0`. Measured on a host with two
+Tesla V100:
 
 | Version | Behaviour on a V100 |
 |---|---|
-| `0.24.0` | works, model fully on GPU |
+| `0.24.0` | works on driver `535.104.05`, model fully on GPU |
 | `0.30.0` – `0.30.10` | GPUs are detected, then the model load aborts with `CUDA error: device kernel image is invalid` |
-| `0.30.11` and later | GPUs are rejected up front with `NVIDIA driver too old, required_driver "550 or newer"`, and inference silently falls back to CPU, about 7x slower |
+| `0.30.11` and later | on driver 535 the GPUs are rejected up front with `NVIDIA driver too old, required_driver "550 or newer"`, and inference silently falls back to CPU, about 7x slower |
+| `0.34.0` | works on driver `570.211.01`, verified 2026-09-11: a 26B model on one GPU, a 70B model split across both, all at 100% GPU |
 
 There are no `0.25` to `0.29` releases: the series goes straight from `0.24.0` to `0.30.0`.
 
 The GPU architecture is not the constraint: compute capability 7.0 is still in the CUDA 12 preset of
 the current releases (`llama/server/CMakePresets.json`, `llama_cuda_v12_linux`). Both failures come
-from the same cause, the driver, so updating it to 550 or newer is enough to raise the tag. Verify
-the driver with `nvidia-smi` first.
+from the same cause, the driver, and a driver update alone was enough to raise the tag. A CUDA
+toolkit installed on the host is irrelevant: the image bundles its own runtime and only needs the
+kernel driver.
 
 #### Function calling and the task model
 
