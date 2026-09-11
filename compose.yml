@@ -7,7 +7,7 @@ services:
     # cause and falls back to CPU, roughly 7x slower. The GPU architecture is not
     # the problem: compute 7.0 is still in the CUDA 12 build. Check the host
     # driver with "nvidia-smi" before raising this.
-    image: ollama/ollama:${OLLAMA_DOCKER_TAG:-0.24.0}
+    image: ollama/ollama:${OLLAMA_DOCKER_TAG:-0.34.0}
     volumes:
       - ./ollama/data:/root/.ollama
     container_name: ollama
