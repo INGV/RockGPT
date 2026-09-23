@@ -1,0 +1,92 @@
+# MCP tool servers for RockGPT: the FDSN event and station catalogues.
+#
+#   docker compose -f compose.yml -f compose-gpu.yml -f compose-rockgpt-mcp.yml up -d
+#
+# These used to run as two hand-written `docker run` commands on the default
+# bridge network, which had three consequences worth naming:
+#
+#   1. Open WebUI reached them through the host's own address, so traffic left
+#      the machine's docker network and came back in to reach a container
+#      sitting next to it. Here they join the project network and are reachable
+#      as `http://mcp-fdsnws-event:8000` and `http://mcp-fdsnws-station:8000`.
+#   2. The event server was started with no restart policy, so it would not have
+#      come back after a reboot -- and nothing would have said so until someone
+#      asked RockGPT a seismological question.
+#   3. Its tuning knobs were never set, so it ran on built-in defaults that no
+#      file recorded.
+#
+# After the first `up -d`, update the two tool server URLs in Open WebUI under
+# Admin Settings -> Tools; the old host-qualified URLs keep working, they simply
+# take the long way round.
+
+services:
+  mcp-fdsnws-event:
+    image: ingv/mcp-fdsnws-event:${MCP_FDSNWS_EVENT_TAG:-2.0.0-mcpo}
+    container_name: mcp-fdsnws-event
+    restart: unless-stopped
+    # Bound to loopback, not to every interface: Open WebUI now reaches this
+    # service by name on the project network, so the published port is only for
+    # diagnosing from the host (`curl localhost:8000/openapi.json`).
+    ports:
+      - "127.0.0.1:${MCP_FDSNWS_EVENT_PORT:-8000}:8000"
+    environment:
+      # Upstream FDSN request timeout, seconds.
+      - FDSN_TIMEOUT=45
+      # Byte budget for a single tool result, about 19250 tokens at the measured
+      # 1.87 bytes/token of this JSON. A table over it is trimmed to fewer rows
+      # and reports has_more; a non-splittable object over it is refused with a
+      # structured error. Sized so one answer cannot crowd the conversation out
+      # of the model's context window.
+      - FDSN_MAX_RESULT_BYTES=36000
+      # Row ceilings, each derived from that budget against the widest row the
+      # tool was measured emitting. Raise them together with the budget, never
+      # alone. They are read once at startup and published as the `maximum` of
+      # each tool's `limit`, so after a change restart this service AND re-import
+      # the tool server in Open WebUI, which caches the schema.
+      - FDSN_MAX_ROWS_ARRIVALS=90
+      - FDSN_DEFAULT_ROWS_ARRIVALS=90
+      - FDSN_MAX_ROWS_STATIONMAGNITUDES=220
+      - FDSN_DEFAULT_ROWS_STATIONMAGNITUDES=200
+      - FDSN_MAX_ROWS_AMPLITUDES=125
+      - FDSN_DEFAULT_ROWS_AMPLITUDES=125
+      - FDSN_MAX_ROWS_EVENTS=240
+      - FDSN_DEFAULT_ROWS_EVENTS=100
+    healthcheck:
+      # mcpo publishes the OpenAPI document Open WebUI reads; if that stops
+      # answering, the tools are gone whether or not the process is alive.
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/openapi.json', timeout=5)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  mcp-fdsnws-station:
+    image: ingv/mcp-fdsnws-station:${MCP_FDSNWS_STATION_TAG:-develop}
+    container_name: mcp-fdsnws-station
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MCP_FDSNWS_STATION_PORT:-8001}:8000"
+    environment:
+      # Not optional. This image defaults to the stdio transport, which in a
+      # container with no stdin attached reads EOF at once and exits 0 -- a
+      # restart loop that looks like a crash but logs nothing at all. Streamable
+      # HTTP is what makes it answer on /mcp, which is the only way Open WebUI
+      # can reach it.
+      - MCP_TRANSPORT=streamable-http
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8000
+    healthcheck:
+      # Unlike the event server this one speaks MCP, not OpenAPI: there is no
+      # /openapi.json to ask for, and /mcp is what must stay answering.
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/mcp', timeout=5)"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    # Register this one in Open WebUI as type "mcp" with the URL
+    # `http://mcp-fdsnws-station:8000/mcp`. A registration pointing at
+    # /mcp/openapi.json returns 404 and leaves the station tools unavailable,
+    # which is what the model papers over by inventing names like
+    # `fdsn_query_stations`.

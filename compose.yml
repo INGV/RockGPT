@@ -31,7 +31,8 @@ services:
       #        in Open WebUI (num_ctx parameter) or use a smaller model
       - OLLAMA_KV_CACHE_TYPE=q8_0
       - OLLAMA_FLASH_ATTENTION=1
-      - OLLAMA_CONTEXT_LENGTH=32768
+      #- OLLAMA_CONTEXT_LENGTH=32768
+      - OLLAMA_CONTEXT_LENGTH=65536
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:${WEBUI_DOCKER_TAG:-v0.11.3-cuda}
