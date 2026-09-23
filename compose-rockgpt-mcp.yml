@@ -21,7 +21,7 @@
 
 services:
   mcp-fdsnws-event:
-    image: ingv/mcp-fdsnws-event:${MCP_FDSNWS_EVENT_TAG:-2.0.0-mcpo}
+    image: ingv/mcp-fdsnws-event:${MCP_FDSNWS_EVENT_TAG:-2.1.0-mcpo}
     container_name: mcp-fdsnws-event
     restart: unless-stopped
     # Bound to loopback, not to every interface: Open WebUI now reaches this
