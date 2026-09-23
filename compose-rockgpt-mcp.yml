@@ -79,8 +79,13 @@ services:
     healthcheck:
       # Unlike the event server this one speaks MCP, not OpenAPI: there is no
       # /openapi.json to ask for, and /mcp is what must stay answering.
+      #
+      # The Accept header is not decoration. A bare GET on a streamable-HTTP MCP
+      # endpoint is answered 406 Not Acceptable, so a probe without it reports a
+      # perfectly healthy service as unhealthy -- which is exactly what the first
+      # version of this check did.
       test: ["CMD", "python", "-c",
-             "import urllib.request; urllib.request.urlopen('http://localhost:8000/mcp', timeout=5)"]
+             "import urllib.request; urllib.request.urlopen(urllib.request.Request('http://localhost:8000/mcp', headers={'Accept': 'application/json, text/event-stream'}), timeout=5)"]
       interval: 60s
       timeout: 10s
       retries: 3
