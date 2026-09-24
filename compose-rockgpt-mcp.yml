@@ -15,9 +15,12 @@
 #   3. Its tuning knobs were never set, so it ran on built-in defaults that no
 #      file recorded.
 #
-# After the first `up -d`, update the two tool server URLs in Open WebUI under
-# Admin Settings -> Tools; the old host-qualified URLs keep working, they simply
-# take the long way round.
+# After the first `up -d`, point the two tool servers in Open WebUI (Admin
+# Settings -> Tools) at the names above. This step is not optional: both ports
+# below are published on loopback only, so the old host-qualified URLs
+# (`http://cat-scenari2.int.ingv.it:8000`, `...:8001/mcp`) are refused from
+# inside the Open WebUI container, and a tool server still registered that way
+# silently stops offering its tools.
 
 services:
   mcp-fdsnws-event:
