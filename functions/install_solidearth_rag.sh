@@ -34,6 +34,14 @@ if [[ ! -r "${PIPE_FILE}" ]]; then
 fi
 
 # --- sign in ----------------------------------------------------------------
+# Without a terminal on stdin "read" gets EOF and set -e ends the script
+# with no output at all (seen when run through a non-interactive runner):
+# fail loudly instead, and never accept the password from arguments or
+# the environment, which would leave it in shell history or transcripts.
+if [[ ! -t 0 ]]; then
+    echo "stdin is not a terminal: run this script from an interactive shell (it prompts for the ${ADMIN_EMAIL} password)" >&2
+    exit 1
+fi
 read -rs -p "Password for ${ADMIN_EMAIL} on ${BASE_URL}: " ADMIN_PASSWORD
 echo
 SIGNIN_BODY="$(jq -n --arg email "${ADMIN_EMAIL}" --arg password "${ADMIN_PASSWORD}" \
