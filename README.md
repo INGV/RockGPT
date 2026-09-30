@@ -406,6 +406,48 @@ docker compose -f compose.yml -f compose-gpu.yml config
 ### Advanced RAG Configuration
 - For fine-tuning RAG settings (e.g., chunk size, embedding model, retriever strategy), refer to the [OpenWebUI documentation](https://docs.openwebui.com/)
 
+### External RAG: the SolidEarth collection
+
+The INGV gateway `llm.pp.ingv.it` hosts a second, external RAG: the EarthPrints "solid-earth"
+articles (about 3900 PDFs) indexed in a Qdrant collection named `SolidEarth`. It is not an
+OpenAI-compatible model, so it cannot be added as a connection: it answers on a single JSON endpoint,
+`POST /rag/query`. RockGPT exposes it through an Open WebUI **Pipe function**,
+`functions/solidearth_rag_pipe.py`, which appears in the model picker as **RockGPT SolidEarth**
+(model id `solidearth_rag`), forwards the last user message to the endpoint and returns the answer
+with the retrieved documents as citations.
+
+Install or update it through the API (asks for the local admin password, stores nothing):
+
+```sh
+functions/install_solidearth_rag.sh https://rockgpt.int.ingv.it
+```
+
+The script creates the function, activates it and creates the Workspace model record with a public
+read grant, without which non-admin users do not see the model. The same can be done by hand:
+Admin Settings > Functions > "+", paste the file, enable it, then Workspace > Models > visibility
+Public.
+
+Valves (function settings, editable from the Admin Functions page):
+
+| Valve | Default | Notes |
+|-------|---------|-------|
+| `RAG_QUERY_URL` | `https://llm.pp.ingv.it/rag/query` | |
+| `API_KEY` | empty | Empty means the first key of the container's `OPENAI_API_KEYS`, i.e. the gateway token already in `.env`. Never put it in the code. |
+| `COLLECTION` | `SolidEarth` | |
+| `TOP_K` | `10` | Chunks retrieved from the vector DB |
+| `MODEL` | `qwen35-122b-a10b-int4` | Gateway model that writes the answer |
+| `TEMPERATURE`, `MAX_TOKENS` | `0.2`, `1024` | |
+| `TIMEOUT_SECONDS` | `300` | The proxy allows 900 |
+| `SOURCE_URL_TEMPLATE` | `https://www.earth-prints.org/handle/{handle}` | Empty disables links |
+
+Known limitations, all on the endpoint side:
+
+- `/rag/query` takes a single `question`: follow-up turns do not carry the conversation.
+- Sources are file names only, `<prefix>_<id>_<title>.pdf`, where `<prefix>/<id>` is the EarthPrints
+  handle: the pipe turns it into a link to the EarthPrints record. The passage text is not returned,
+  so the citation modal shows the file identity, not the retrieved excerpt.
+- The system prompt and tools of the Workspace record never reach the model.
+
 ---
 
 ## 📁 Project Structure
@@ -415,6 +457,9 @@ RockGPT/
 ├── compose-gpu.yml                 # Overlay: NVIDIA device reservation for ollama
 ├── env.example                     # Template for .env
 ├── .env                            # Local configuration, gitignored, holds the API keys
+├── functions/
+│  ├── solidearth_rag_pipe.py       # Open WebUI Pipe function: the external SolidEarth RAG
+│  └── install_solidearth_rag.sh    # Installs/updates it through the Open WebUI API
 ├── ollama/
 │  └── data/                        # -> /root/.ollama, pulled models
 ├── openwebui/
