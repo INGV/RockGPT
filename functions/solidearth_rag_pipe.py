@@ -65,6 +65,9 @@ RAW_PREVIEW_LIMIT = 4000
 # handle with "/" replaced by "_" (2122_7887_Studio_... -> 2122/7887).
 HANDLE_PREFIX = re.compile(r"^(\d+)_(\d+)_")
 
+# Trailing ".pdf", ".txt" and the like: 2-5 alphanumerics after the last dot.
+FILE_EXTENSION = re.compile(r"\.[A-Za-z0-9]{2,5}$")
+
 
 class Pipe:
     class Valves(BaseModel):
@@ -195,10 +198,11 @@ class Pipe:
     def _display_name(filename: str) -> str:
         """Human-readable label for the citation chip: drop the handle
         prefix and the extension, turn underscores into spaces. The raw
-        filename stays in metadata.source and in the document text."""
+        filename stays in metadata.source and in the document text. The
+        collection holds .txt files too (OCR output of scanned PDFs), so
+        any short extension goes, not just .pdf."""
         name = HANDLE_PREFIX.sub("", filename)
-        if name.lower().endswith(".pdf"):
-            name = name[:-4]
+        name = FILE_EXTENSION.sub("", name)
         name = name.replace("_", " ").strip()
         return name or filename
 
